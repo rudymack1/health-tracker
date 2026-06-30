@@ -326,8 +326,7 @@
           <label class="fld" style="margin-top:6px">Description <span style="font-weight:400;color:var(--faint)">(include the amount, e.g. "2 Weet-Bix with milk")</span></label>
           <textarea id="favEditDesc" placeholder="what this favourite is"></textarea>
           <div class="row-btns">
-            <button class="btn sm sec" id="favEditReanalyse">Re-analyse &amp; save</button>
-            <button class="btn sm ghost" id="favEditSave">Save name &amp; text only</button>
+            <button class="btn sm sec" id="favEditSave">Save favourite</button>
             <button class="btn sm ghost" id="favEditCancel">Cancel</button>
           </div>
         </div>
@@ -513,14 +512,20 @@ function renderFavDropdown(){
   if(prev && +prev < favs.length) sel.value=prev;
 }
 
-function logFavourite(){
+async function logFavourite(){
   const sel=document.getElementById('favSelect');
   if(!sel||!favs.length) return;
   const f=favs[+sel.value]; if(!f) return;
-  const log=getLog(currentDate);
-  log.food.push({ desc:f.desc, name:f.label, analysis:{...f.analysis} });
-  saveLogs(); clearSuggCache(); renderFoodList(); renderDash();
-  toast('Logged '+Eu(f.analysis.calories||0)+' from favourites.');
+  if(!apiKey){ toast('Add your API key in Settings first.',true); return; }
+  const btn=document.getElementById('favLogBtn'); busy(btn,true,'Logging…');
+  try{
+    const out=await callClaude(FOOD_SYS+dietNote(), f.desc);
+    const a=extractJSON(out);
+    getLog(currentDate).food.push({ desc:f.desc, name:f.label||a.name||f.desc, analysis:a });
+    saveLogs(); clearSuggCache(); renderFoodList(); renderDash();
+    toast('Logged '+Eu(a.calories||0)+' from favourites.');
+  }catch(e){ toast(errMsg(e),true); }
+  finally{ busy(btn,false,'Log'); }
 }
 
 function blankLog(date){ return { date, weight:null, energy:null, mood:null, note:'', food:[], exercise:[], emEntries:[], recipe:null }; }
@@ -1554,7 +1559,6 @@ function bindEvents(){
     const er=document.getElementById('favEditRow');
     document.getElementById('favEditInput').value=favs[i].label;
     document.getElementById('favEditDesc').value=favs[i].desc||'';
-    busy(document.getElementById('favEditReanalyse'),false,'Re-analyse &amp; save');
     er.dataset.i=i; er.style.display='block';
     document.getElementById('favEditInput').focus();
   };
@@ -1566,23 +1570,6 @@ function bindEvents(){
     if(!name){ toast('Enter a name.'); return; }
     if(favs[i]){ favs[i].label=name; favs[i].desc=desc||favs[i].desc; saveFavs(); }
     er.style.display='none'; renderFavDropdown(); document.getElementById('favSelect').value=i; toast('Saved.');
-  };
-  document.getElementById('favEditReanalyse').onclick=async()=>{
-    const er=document.getElementById('favEditRow'); const i=+er.dataset.i; if(!favs[i]) return;
-    const name=document.getElementById('favEditInput').value.trim();
-    const desc=document.getElementById('favEditDesc').value.trim();
-    if(!name){ toast('Enter a name.'); return; }
-    if(!desc){ toast('Enter a description to re-analyse.'); return; }
-    if(!apiKey){ toast('Add your API key in Settings first.',true); return; }
-    const btn=document.getElementById('favEditReanalyse'); busy(btn,true,'Analysing…');
-    try{
-      const out=await callClaude(FOOD_SYS+dietNote(), desc);
-      const a=extractJSON(out);
-      favs[i]={ ...favs[i], label:name, desc, analysis:a };
-      saveFavs();
-      er.style.display='none'; renderFavDropdown(); document.getElementById('favSelect').value=i;
-      toast('Updated '+Eu(a.calories||0)+'.');
-    }catch(e){ toast(errMsg(e),true); busy(btn,false,'Re-analyse &amp; save'); }
   };
   document.getElementById('favDelBtn').onclick=()=>{
     const sel=document.getElementById('favSelect'); const i=+sel.value; if(!favs[i]) return;
