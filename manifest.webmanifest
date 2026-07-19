@@ -1,0 +1,13 @@
+{
+  "name": "Vytafy",
+  "short_name": "Vytafy",
+  "description": "Vytafy health partner",
+  "start_url": "./health-tracker.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f4f5",
+  "theme_color": "#6b2d5c",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
