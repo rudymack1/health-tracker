@@ -2,7 +2,7 @@
   "name": "Vytafy",
   "short_name": "Vytafy",
   "description": "Vytafy health partner",
-  "start_url": "./health-tracker.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f4f5",
